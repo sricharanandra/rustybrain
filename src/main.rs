@@ -10,7 +10,7 @@ fn main() {
             println!("Your friendly CLI task management app.");
             println!();
 
-            println!("Here’s how to use RustyBrain:");
+            println!("Here's how to use RustyBrain:");
             println!("Type a command to get started, or type 'help' for options.");
             println!();
 
@@ -30,7 +30,9 @@ fn main() {
             _ if input.starts_with("add ") => {
                 let task = input[4..].trim();
                 if task.is_empty() {
-                    println!("You need to provide a task to add! It’s not rocket science... or is it?");
+                    println!(
+                        "You need to provide a task to add! It’s not rocket science... or is it?"
+                    );
                 } else {
                     tasks.push(task.to_string());
                     println!(
@@ -79,4 +81,3 @@ fn main() {
         println!();
     }
 }
-
