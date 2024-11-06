@@ -31,13 +31,28 @@ fn main() {
                 let task = input[4..].trim();
                 if task.is_empty() {
                     println!(
-                        "You need to provide a task to add! It’s not rocket science... or is it?"
+                        "You need to provide a task to add! It's not rocket science... or is it?"
                     );
                 } else {
                     tasks.push(task.to_string());
                     println!(
                         "\nTask added! Now your brain can relax—no need to remember it anymore!\n"
                     );
+                }
+            }
+
+            _ if input.starts_with("delete") || input.starts_with("remove") => {
+                if tasks.is_empty() {
+                    println!("Look's your brain is empty, so there's nothing to delete!");
+                } else {
+                    let index_to_remove: usize = input[6..].trim().parse().unwrap();
+
+                    if index_to_remove > tasks.len() || index_to_remove <= 0 {
+                        println!("You can't delete tasks that don't exist!");
+                    } else {
+                        tasks.remove(index_to_remove - 1);
+                        println!("\nTask deleted! You're a little less rusty now!\n")
+                    }
                 }
             }
             "view" => {
@@ -60,6 +75,7 @@ fn main() {
                 println!();
                 println!("1. add <task>: Add a new task");
                 println!("2. view: View your tasks");
+                println!("3. delete/remove <task_number>: Delete a task");
                 println!("3. help: Show this help message");
                 println!("4. exit: Exit the app");
                 println!();
