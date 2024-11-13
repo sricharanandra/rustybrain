@@ -23,8 +23,8 @@ fn save_tasks(tasks: &Vec<Task>) {
 
 fn show_welcome() {
     println!("Welcome to RustyBrain!");
-    println!("Your friendly CLI task management app.");
-    println!("Usage:");
+    println!("I remember things so you don't have to.");
+    println!("Commands list:");
     println!("  rustybrain add <task> - Add a new task");
     println!("  rustybrain view - View your tasks");
     println!("  rustybrain delete <task_number> - Delete a task");
@@ -44,14 +44,17 @@ fn main() {
     match args[1].as_str() {
         "add" => {
             if args.len() < 3 {
-                println!("Please provide a task description to add.");
+                println!("Try again and maybe this time mention the task you want to add.");
                 return;
             }
             let description = args[2..].join(" ");
-            let added_time = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_secs();
+            let added_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                Ok(duration) => duration.as_secs(),
+                Err(e) => {
+                    eprintln!("Error getting system time: {:?}", e);
+                    return;
+                }
+            };
             tasks.push(Task {
                 description,
                 added_time,
@@ -62,37 +65,37 @@ fn main() {
         }
         "delete" => {
             if args.len() < 3 {
-                println!("Please provide the task number to delete.");
+                println!("Maybe provide a valid task to delete?");
                 return;
             }
             let task_number: usize = args[2].parse().unwrap_or(0);
             if task_number == 0 || task_number > tasks.len() {
-                println!("Invalid task number.");
+                println!("Task doesn't exist. Are you sure you don't have a rusty brain?");
             } else {
                 tasks.remove(task_number - 1);
                 save_tasks(&tasks);
-                println!("Task deleted! You’re a little less rusty now.");
+                println!("Task deleted! You're a little less rusty now.");
             }
         }
         "mark" => {
             if args.len() < 3 {
-                println!("Please provide the task number to mark as done.");
+                println!("Can't mark a task if you don't tell me which one.");
                 return;
             }
             let task_number: usize = args[2].parse().unwrap_or(0);
             if task_number == 0 || task_number > tasks.len() {
-                println!("Invalid task number.");
+                println!("Doesn't exist. Maybe you're just imagining tasks?");
             } else {
                 tasks[task_number - 1].done = true;
                 save_tasks(&tasks);
-                println!("Task marked as done!");
+                println!("Task marked as done! Keep up the good work.");
             }
         }
         "view" => {
             if tasks.is_empty() {
                 println!("No tasks available. Looks like your brain is clear!");
             } else {
-                println!("Your tasks:");
+                println!("Here's what you forgot to do:");
                 for (index, task) in tasks.iter().enumerate() {
                     let status = if task.done { "✓" } else { "✗" };
                     println!("{}. {} [{}]", index + 1, task.description, status);
