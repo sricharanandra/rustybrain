@@ -1,99 +1,105 @@
-use std::io::{self, Write};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::env;
+use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Task {
+    description: String,
+    added_time: u64,
+    done: bool,
+}
+
+fn load_tasks() -> Vec<Task> {
+    let data = fs::read_to_string("rustytasks").unwrap_or_default();
+    serde_json::from_str(&data).unwrap_or_default()
+}
+
+fn save_tasks(tasks: &Vec<Task>) {
+    let data = serde_json::to_string(tasks).expect("Failed to serialize tasks");
+    fs::write("rustytasks", data).expect("Failed to write tasks to file");
+}
+
+fn show_welcome() {
+    println!("Welcome to RustyBrain!");
+    println!("Your friendly CLI task management app.");
+    println!("Usage:");
+    println!("  rustybrain add <task> - Add a new task");
+    println!("  rustybrain view - View your tasks");
+    println!("  rustybrain delete <task_number> - Delete a task");
+    println!("  rustybrain mark <task_number> - Mark a task as done");
+    println!("  rustybrain help - Show this help message");
+}
 
 fn main() {
-    let mut tasks: Vec<String> = Vec::new();
-    let mut first_launch = true;
+    let args: Vec<String> = env::args().collect();
+    let mut tasks = load_tasks();
 
-    loop {
-        if first_launch {
-            println!("Welcome to RustyBrain!");
-            println!("Your friendly CLI task management app.");
-            println!();
+    if args.len() == 1 {
+        show_welcome();
+        return;
+    }
 
-            println!("Here's how to use RustyBrain:");
-            println!("Type a command to get started, or type 'help' for options.");
-            println!();
-
-            first_launch = false;
+    match args[1].as_str() {
+        "add" => {
+            if args.len() < 3 {
+                println!("Please provide a task description to add.");
+                return;
+            }
+            let description = args[2..].join(" ");
+            let added_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs();
+            tasks.push(Task {
+                description,
+                added_time,
+                done: false,
+            });
+            save_tasks(&tasks);
+            println!("Task added! No need to remember it anymore.");
         }
-
-        println!("Enter your command:");
-        io::stdout().flush().unwrap();
-        let mut input = String::new();
-
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Unable to read input");
-        let input = input.trim();
-
-        match input {
-            _ if input.starts_with("add ") => {
-                let task = input[4..].trim();
-                if task.is_empty() {
-                    println!(
-                        "You need to provide a task to add! It's not rocket science... or is it?"
-                    );
-                } else {
-                    tasks.push(task.to_string());
-                    println!(
-                        "\nTask added! Now your brain can relax—no need to remember it anymore!\n"
-                    );
-                }
+        "delete" => {
+            if args.len() < 3 {
+                println!("Please provide the task number to delete.");
+                return;
             }
-
-            _ if input.starts_with("delete") || input.starts_with("remove") => {
-                if tasks.is_empty() {
-                    println!("Look's your brain is empty, so there's nothing to delete!");
-                } else {
-                    let index_to_remove: usize = input[6..].trim().parse().unwrap();
-
-                    if index_to_remove > tasks.len() || index_to_remove <= 0 {
-                        println!("You can't delete tasks that don't exist!");
-                    } else {
-                        tasks.remove(index_to_remove - 1);
-                        println!("\nTask deleted! You're a little less rusty now!\n")
-                    }
-                }
-            }
-            "view" => {
-                println!();
-                println!("Here are the things you need to do that you clearly forgot:");
-                println!();
-
-                if tasks.is_empty() {
-                    println!("Looks like your task list is as empty as a rusty brain!");
-                } else {
-                    for (index, task) in tasks.iter().enumerate() {
-                        println!("{}. {}", index + 1, task);
-                    }
-                }
-                println!();
-            }
-            "help" => {
-                println!();
-                println!("Here's how to use RustyBrain:");
-                println!();
-                println!("1. add <task>: Add a new task");
-                println!("2. view: View your tasks");
-                println!("3. delete/remove <task_number>: Delete a task");
-                println!("3. help: Show this help message");
-                println!("4. exit: Exit the app");
-                println!();
-                continue;
-            }
-            "exit" => {
-                println!();
-                println!("Come back soon for a clearer head! Remember, don't rust away!");
-                break;
-            }
-            _ => {
-                println!(
-                    "\nYour brain must be rusty, because that choice isn't even in the cards!\n"
-                );
+            let task_number: usize = args[2].parse().unwrap_or(0);
+            if task_number == 0 || task_number > tasks.len() {
+                println!("Invalid task number.");
+            } else {
+                tasks.remove(task_number - 1);
+                save_tasks(&tasks);
+                println!("Task deleted! You’re a little less rusty now.");
             }
         }
-
-        println!("What's the next task for your trusty rusty brain?");
-        println!();
+        "mark" => {
+            if args.len() < 3 {
+                println!("Please provide the task number to mark as done.");
+                return;
+            }
+            let task_number: usize = args[2].parse().unwrap_or(0);
+            if task_number == 0 || task_number > tasks.len() {
+                println!("Invalid task number.");
+            } else {
+                tasks[task_number - 1].done = true;
+                save_tasks(&tasks);
+                println!("Task marked as done!");
+            }
+        }
+        "view" => {
+            if tasks.is_empty() {
+                println!("No tasks available. Looks like your brain is clear!");
+            } else {
+                println!("Your tasks:");
+                for (index, task) in tasks.iter().enumerate() {
+                    let status = if task.done { "✓ " } else { "✗ " };
+                    println!("{}. {} [{}]", index + 1, task.description, status);
+                }
+            }
+        }
+        "help" => show_welcome(),
+        _ => println!("Unknown command. Type 'rustybrain help' for available commands."),
     }
 }
