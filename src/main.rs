@@ -94,7 +94,7 @@ fn main() {
             } else {
                 println!("Your tasks:");
                 for (index, task) in tasks.iter().enumerate() {
-                    let status = if task.done { "✓ " } else { "✗ " };
+                    let status = if task.done { "✓" } else { "✗" };
                     println!("{}. {} [{}]", index + 1, task.description, status);
                 }
             }
