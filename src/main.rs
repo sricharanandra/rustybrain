@@ -41,10 +41,16 @@ fn main() {
         return;
     }
 
-    let command = if args[0].ends_with("rustybrain") || args[0].ends_with("rb") {
-        args[1].as_str()
+    let command = if args[0] == "rustybrain" || args[0] == "rb" {
+        if args.len() > 1 {
+            args[1].as_str()
+        } else {
+            println!("Try using 'rb help' ");
+            return;
+        }
     } else {
-        args[0].as_str()
+        println!("invalid command. try 'rb help'");
+        return;
     };
     match command {
         "add" => {
