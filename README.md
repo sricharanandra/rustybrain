@@ -22,7 +22,15 @@ rustybrain is an archlinux package for keeping track of tasks using your CLI, he
     cd rustybrain
     cargo build --release
     sudo cp target/release/rustybrain /usr/local/bin
+### Optional: Setting up alias
 
+Open your terminal config file. In my case, I am using zsh so it is .zshrc.
+  Add to the file  ``` alias rb = "rustybrain" ```
+    and then save the config. 
+Next, in your terminal, source the config file by using
+    ``` source <file> ```
+    for example, ``` source ~/.zshrc ```
+    using this you can now use rb instead of rustybrain as your command
 ## Usage
 
 rustybrain runs directly from the terminal with a single command for each action. After installation, you can manage tasks by simply typing commands like:
@@ -50,5 +58,7 @@ rustybrain view                         # Shows your current tasks
 rustybrain mark 1                       # Marks the first task as done
 rustybrain delete 2                     # Deletes the second task
 ```
-
+If you have setup an alias like rb in your terminal configs, you can simply use 
+``` rb add <task> ``` 
+and so on...
 That’s it! rustybrain aims to be a helpful companion that simplifies your workflow and keeps you on track. Enjoy a less rusty memory!
