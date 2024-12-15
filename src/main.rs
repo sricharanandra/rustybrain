@@ -25,11 +25,11 @@ fn show_welcome() {
     println!("Welcome to RustyBrain!");
     println!("I remember things so you don't have to.");
     println!("Commands list:");
-    println!("  rustybrain add <task> - Add a new task");
-    println!("  rustybrain view - View your tasks");
-    println!("  rustybrain delete <task_number> - Delete a task");
-    println!("  rustybrain mark <task_number> - Mark a task as done");
-    println!("  rustybrain help - Show this help message");
+    println!("  rb add <task> - Add a new task");
+    println!("  rb view - View your tasks");
+    println!("  rb delete <task_number> - Delete a task");
+    println!("  rb mark <task_number> - Mark a task as done");
+    println!("  rb help - Show this help message");
 }
 
 fn main() {
@@ -41,7 +41,12 @@ fn main() {
         return;
     }
 
-    match args[1].as_str() {
+    let command = if args[0].ends_with("rustybrain") || args[0].ends_with("rb") {
+        args[1].as_str()
+    } else {
+        args[0].as_str()
+    };
+    match command {
         "add" => {
             if args.len() < 3 {
                 println!("Try again and maybe this time mention the task you want to add.");
