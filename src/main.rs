@@ -12,13 +12,13 @@ struct Task {
 }
 
 fn load_tasks() -> Vec<Task> {
-    let data = fs::read_to_string("rustytasks").unwrap_or_default();
+    let data = fs::read_to_string("~/rustytasks").unwrap_or_default();
     serde_json::from_str(&data).unwrap_or_default()
 }
 
 fn save_tasks(tasks: &Vec<Task>) {
     let data = serde_json::to_string(tasks).expect("Failed to serialize tasks");
-    fs::write("rustytasks", data).expect("Failed to write tasks to file");
+    fs::write("~/rustytasks", data).expect("Failed to write tasks to file");
 }
 
 fn show_welcome() {
@@ -41,6 +41,8 @@ fn main() {
         return;
     }
 
+    // support for "rb" will be added in later versions. for now it is only accessible through
+    // aliases
     let command = if args[0] == "rustybrain" || args[0] == "rb" {
         if args.len() > 1 {
             args[1].as_str()
