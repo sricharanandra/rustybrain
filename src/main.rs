@@ -127,7 +127,7 @@ fn main() {
             }
             let task_number: usize = args[2].parse().unwrap_or(0);
             if task_number == 0 || task_number > tasks.len() {
-                println!("Doesn't exist. Maybe you're just imagining tasks?");
+                eprintln!("Doesn't exist. Maybe you're just imagining tasks?");
             } else {
                 tasks[task_number - 1].done = true;
                 save_tasks(&tasks);
