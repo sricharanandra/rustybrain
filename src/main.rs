@@ -38,11 +38,12 @@ fn show_welcome() {
     println!("Welcome to RustyBrain!");
     println!("I remember things so you don't have to.");
     println!("Commands list:");
-    println!("  rb add <task> - Add a new task");
-    println!("  rb view - View your tasks");
-    println!("  rb delete <task_number> - Delete a task");
-    println!("  rb mark <task_number> - Mark a task as done");
-    println!("  rb help - Show this help message");
+    println!("  rustybrain add <task> - Add a new task");
+    println!("  rustybrain view - View your tasks");
+    println!("  rustybrain edit <task_number> <edited_task> - Edit a saved task");
+    println!("  rustybrain delete <task_number> - Delete a task");
+    println!("  rustybrain mark <task_number> - Mark a task as done");
+    println!("  rustybrain help - Show this help message");
 }
 
 fn main() {
@@ -87,6 +88,23 @@ fn main() {
             });
             save_tasks(&tasks);
             println!("Task added! No need to remember it anymore.");
+        }
+        "edit" => {
+            if args.len() < 4 {
+                println!("Your brain must be more rusty than I imagined. Try using the command properly or try rustybrain help.");
+                return;
+            }
+
+            let task_to_be_edited: usize = args[2].parse().unwrap_or(0);
+            if task_to_be_edited == 0 || task_to_be_edited > tasks.len() {
+                println!("I can't help you edit something that doesn't exist. But I can help you remove that rust in your brain. Try running rustybrain help.");
+            }
+            let edited_task = args[3..].join(" ");
+            tasks[task_to_be_edited - 1].description = edited_task; //i transferred ownership bcoz
+                                                                    //i dont need it anymore. add .clone() if you want to use edited_task within the same
+                                                                    //scope in later time.
+            save_tasks(&tasks);
+            println!("Task {} has been updated.", task_to_be_edited);
         }
         "delete" => {
             if args.len() < 3 {
