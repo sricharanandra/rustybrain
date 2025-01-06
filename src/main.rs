@@ -1,21 +1,31 @@
+
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Task {
     description: String,
-    added_time: u64,
-    done: bool,
+    group: String,        // Group the task belongs to
+    priority: u8,         // Priority level (1 = High, 2 = Medium, 3 = Low)
+    added_time: u64,      // Time the task was added
+    done: bool,           // Completion status
+}
+
+fn parse_flag_value(flag: &str, prefix: &str) -> Option<String> {
+    if flag.starts_with(prefix) {
+        Some(flag[prefix.len()..].to_string())
+    } else {
+        None
+    }
 }
 
 fn get_tasks_file_path() -> PathBuf {
     let home_dir = env::var("HOME").expect("Could not find the home directory");
     let mut file_path = PathBuf::from(home_dir);
-    file_path.push(".rustytasks"); // Hidden file in the home directory
+    file_path.push(".rustytasks");
     file_path
 }
 
@@ -34,16 +44,32 @@ fn save_tasks(tasks: &Vec<Task>) {
     fs::write(file_path, data).expect("Failed to write tasks to file");
 }
 
+fn create_empty_group(group_name: &str) {
+    let mut tasks = load_tasks();
+    // Check if the group already exists
+    if tasks.iter().any(|task| task.group == group_name) {
+        println!("Group '{}' already exists.", group_name);
+    } else {
+        // Create a dummy task to represent the group
+        tasks.push(Task {
+            description: "Empty group placeholder".to_string(),
+            group: group_name.to_string(),
+            priority: 3,
+            added_time: 0, // No specific time for an empty group
+            done: false,
+        });
+        save_tasks(&tasks);
+        println!("Group '{}' created successfully.", group_name);
+    }
+}
+
 fn show_welcome() {
-    println!("Welcome to RustyBrain!");
-    println!("I remember things so you don't have to.");
-    println!("Commands list:");
-    println!("  rustybrain add <task> - Add a new task");
-    println!("  rustybrain view - View your tasks");
-    println!("  rustybrain edit <task_number> <edited_task> - Edit a saved task");
-    println!("  rustybrain delete <task_number> - Delete a task");
-    println!("  rustybrain mark <task_number> - Mark a task as done");
-    println!("  rustybrain help - Show this help message");
+    println!("Welcome to rustybrain, your terminal task manager!");
+    println!("Available commands:");
+    println!("  add <task> [--group=<group>] [--priority=<level>]   Add a task.");
+    println!("  view [--group=<group>] [--sort=<priority|time>]      View tasks.");
+    println!("  --make-group=<group_name>                            Create an empty group.");
+    println!("  help                                                Show this help message.");
 }
 
 fn main() {
@@ -55,93 +81,89 @@ fn main() {
         return;
     }
 
-    let command = if args[0] == "rustybrain" || args[0] == "rb" {
-        if args.len() > 1 {
-            args[1].as_str()
-        } else {
-            println!("Try using 'rb help' ");
+    let command = &args[1];
+
+    if command == "--make-group" {
+        if args.len() < 3 {
+            println!("Please provide a group name.");
             return;
         }
-    } else {
-        println!("Invalid command. Try 'rb help'");
+        let group_name = &args[2];
+        create_empty_group(group_name);
         return;
-    };
+    }
+
+    let command = args[1].as_str();
 
     match command {
         "add" => {
             if args.len() < 3 {
-                println!("Try again and maybe this time mention the task you want to add.");
+                println!("Please provide a task description.");
                 return;
             }
-            let description = args[2..].join(" ");
-            let added_time = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                Ok(duration) => duration.as_secs(),
-                Err(e) => {
-                    eprintln!("Error getting system time: {:?}", e);
-                    return;
+
+            let description = args[2].clone();
+            let mut group = "default".to_string(); // Default group if not specified
+            let mut priority = 3;                 // Default priority (low)
+
+            for arg in &args[3..] {
+                if let Some(val) = parse_flag_value(arg, "--group=") {
+                    group = val;
+                } else if let Some(val) = parse_flag_value(arg, "--priority=") {
+                    priority = val.parse().unwrap_or(3);
                 }
-            };
+            }
+
+            let added_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs();
+
             tasks.push(Task {
                 description,
+                group: group.clone(), // Clone `group` to avoid move error
+                priority,
                 added_time,
                 done: false,
             });
             save_tasks(&tasks);
-            println!("Task added! No need to remember it anymore.");
-        }
-        "edit" => {
-            if args.len() < 4 {
-                println!("Your brain must be more rusty than I imagined. Try using the command properly or try rustybrain help.");
-                return;
-            }
-
-            let task_to_be_edited: usize = args[2].parse().unwrap_or(0);
-            if task_to_be_edited == 0 || task_to_be_edited > tasks.len() {
-                println!("I can't help you edit something that doesn't exist. But I can help you remove that rust in your brain. Try running rustybrain help.");
-            }
-            let edited_task = args[3..].join(" ");
-            tasks[task_to_be_edited - 1].description = edited_task; //i transferred ownership bcoz
-                                                                    //i dont need it anymore. add .clone() if you want to use edited_task within the same
-                                                                    //scope in later time.
-            save_tasks(&tasks);
-            println!("Task {} has been updated.", task_to_be_edited);
-        }
-        "delete" => {
-            if args.len() < 3 {
-                println!("Maybe provide a valid task to delete?");
-                return;
-            }
-            let task_number: usize = args[2].parse().unwrap_or(0);
-            if task_number == 0 || task_number > tasks.len() {
-                println!("Task doesn't exist. Are you sure you don't have a rusty brain?");
-            } else {
-                tasks.remove(task_number - 1);
-                save_tasks(&tasks);
-                println!("Task deleted! You're a little less rusty now.");
-            }
-        }
-        "mark" => {
-            if args.len() < 3 {
-                println!("Can't mark a task if you don't tell me which one.");
-                return;
-            }
-            let task_number: usize = args[2].parse().unwrap_or(0);
-            if task_number == 0 || task_number > tasks.len() {
-                eprintln!("Doesn't exist. Maybe you're just imagining tasks?");
-            } else {
-                tasks[task_number - 1].done = true;
-                save_tasks(&tasks);
-                println!("Task marked as done! Keep up the good work.");
-            }
+            println!("Task added to group '{}' with priority {}.", group, priority);
         }
         "view" => {
-            if tasks.is_empty() {
-                println!("No tasks available. Looks like your brain is clear!");
+            let mut filtered_tasks = tasks.clone();
+            let mut sort_by = "time".to_string(); // Change `sort_by` to `String`
+
+            for arg in &args[2..] {
+                if let Some(group) = parse_flag_value(arg, "--group=") {
+                    filtered_tasks = filtered_tasks
+                        .into_iter()
+                        .filter(|task| task.group == group)
+                        .collect();
+                } else if let Some(sort) = parse_flag_value(arg, "--sort=") {
+                    sort_by = sort.clone(); // `sort_by` is now a `String`, so this is fine
+                }
+            }
+
+            if sort_by == "priority" {
+                filtered_tasks.sort_by_key(|task| task.priority);
+            } else if sort_by == "time" {
+                filtered_tasks.sort_by_key(|task| task.added_time);
+            }
+
+            if filtered_tasks.is_empty() {
+                println!("No tasks available.");
             } else {
-                println!("Here's what you forgot to do:");
-                for (index, task) in tasks.iter().enumerate() {
+                println!("Here are your tasks:");
+                for (index, task) in filtered_tasks.iter().enumerate() {
                     let status = if task.done { "✓" } else { "✗" };
-                    println!("{}. {} [{}]", index + 1, task.description, status);
+                    println!(
+                        "{}. [{}] {} [{}] (Priority: {})",
+                        index + 1,
+                        task.group,
+                        task.description,
+                        status,
+                        task.priority
+                    );
                 }
             }
         }
