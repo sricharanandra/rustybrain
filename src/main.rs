@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
@@ -8,10 +7,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Task {
     description: String,
-    group: String,        // Group the task belongs to
-    priority: u8,         // Priority level (1 = High, 2 = Medium, 3 = Low)
-    added_time: u64,      // Time the task was added
-    done: bool,           // Completion status
+    group: String, // Group the task belongs to
+    priority: u8,  // Priority level (1 = High, 2 = Medium, 3 = Low)
+    added_time: u64,
+    done: bool, // Completion status
 }
 
 fn parse_flag_value(flag: &str, prefix: &str) -> Option<String> {
@@ -104,7 +103,7 @@ fn main() {
 
             let description = args[2].clone();
             let mut group = "default".to_string(); // Default group if not specified
-            let mut priority = 3;                 // Default priority (low)
+            let mut priority = 3; // Default priority (low)
 
             for arg in &args[3..] {
                 if let Some(val) = parse_flag_value(arg, "--group=") {
@@ -127,7 +126,10 @@ fn main() {
                 done: false,
             });
             save_tasks(&tasks);
-            println!("Task added to group '{}' with priority {}.", group, priority);
+            println!(
+                "Task added to group '{}' with priority {}.",
+                group, priority
+            );
         }
         "view" => {
             let mut filtered_tasks = tasks.clone();
